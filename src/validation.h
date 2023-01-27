@@ -23,6 +23,7 @@
 #include <policy/policy.h>
 #include <script/script_error.h>
 #include <script/sigcache.h>
+#include <script/interpreter.h>
 #include <sync.h>
 #include <txdb.h>
 #include <txmempool.h> // For CTxMemPool::cs
@@ -340,8 +341,10 @@ private:
     SignatureCache* m_signature_cache;
 
 public:
+    std::vector<DeferredCheck> m_deferred_checks;
+
     CScriptCheck(const CTxOut& outIn, const CTransaction& txToIn, SignatureCache& signature_cache, unsigned int nInIn, unsigned int nFlagsIn, bool cacheIn, PrecomputedTransactionData* txdataIn) :
-        m_tx_out(outIn), ptxTo(&txToIn), nIn(nInIn), nFlags(nFlagsIn), cacheStore(cacheIn), txdata(txdataIn), m_signature_cache(&signature_cache) { }
+        m_tx_out(outIn), ptxTo(&txToIn), nIn(nInIn), nFlags(nFlagsIn), cacheStore(cacheIn), txdata(txdataIn), m_deferred_checks(), m_signature_cache(&signature_cache) { }
 
     CScriptCheck(const CScriptCheck&) = delete;
     CScriptCheck& operator=(const CScriptCheck&) = delete;
@@ -950,7 +953,22 @@ private:
     }
 
     //! A queue for script verifications that have to be performed by worker threads.
-    CCheckQueue<CScriptCheck> m_script_check_queue;
+    CCheckQueue<CScriptCheck, DeferredCheck> m_script_check_queue;
+
+    //! Timers and counters used for benchmarking validation in both background
+    //! and active chainstates.
+    SteadyClock::duration GUARDED_BY(::cs_main) time_check{};
+    SteadyClock::duration GUARDED_BY(::cs_main) time_forks{};
+    SteadyClock::duration GUARDED_BY(::cs_main) time_connect{};
+    SteadyClock::duration GUARDED_BY(::cs_main) time_verify{};
+    SteadyClock::duration GUARDED_BY(::cs_main) time_undo{};
+    SteadyClock::duration GUARDED_BY(::cs_main) time_index{};
+    SteadyClock::duration GUARDED_BY(::cs_main) time_total{};
+    int64_t GUARDED_BY(::cs_main) num_blocks_total{0};
+    SteadyClock::duration GUARDED_BY(::cs_main) time_connect_total{};
+    SteadyClock::duration GUARDED_BY(::cs_main) time_flush{};
+    SteadyClock::duration GUARDED_BY(::cs_main) time_chainstate{};
+    SteadyClock::duration GUARDED_BY(::cs_main) time_post_connect{};
 
     //! Timers and counters used for benchmarking validation in both background
     //! and active chainstates.
@@ -1322,7 +1340,12 @@ public:
     //! header in our block-index not known to be invalid, recalculate it.
     void RecalculateBestHeader() EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
 
-    CCheckQueue<CScriptCheck>& GetCheckQueue() { return m_script_check_queue; }
+    //! If, due to invalidation / reconsideration of blocks, the previous
+    //! best header is no longer valid / guaranteed to be the most-work
+    //! header in our block-index not known to be invalid, recalculate it.
+    void RecalculateBestHeader() EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
+
+    CCheckQueue<CScriptCheck, DeferredCheck>& GetCheckQueue() { return m_script_check_queue; }
 
     ~ChainstateManager();
 };
