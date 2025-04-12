@@ -1234,10 +1234,12 @@ bool MemPoolAccept::PolicyScriptChecks(const ATMPArgs& args, Workspace& ws)
     unsigned int scriptVerifyFlags = STANDARD_SCRIPT_VERIFY_FLAGS;
 
     // CHECKTEMPLATEVERIFY (BIP119) is always active on regtest, but no other chain.
-    if (args.m_chainparams.GetChainType() == ChainType::REGTEST) {
         scriptVerifyFlags |= SCRIPT_VERIFY_CHECKTEMPLATEVERIFY;
         scriptVerifyFlags &= ~SCRIPT_VERIFY_DISCOURAGE_CHECKTEMPLATEVERIFY;
-    }
+
+    // CHECKSIGFROMSTACK (BIP348) is always active on regtest, but no other chain.
+        scriptVerifyFlags |= SCRIPT_VERIFY_CHECKSIGFROMSTACK;
+        scriptVerifyFlags &= ~SCRIPT_VERIFY_DISCOURAGE_CHECKSIGFROMSTACK;
 
     // Check input scripts and signatures.
     // This is done last to help prevent CPU exhaustion denial-of-service attacks.
@@ -2414,11 +2416,6 @@ static unsigned int GetBlockScriptFlags(const CBlockIndex& block_index, const Ch
     const auto it{consensusparams.script_flag_exceptions.find(*Assert(block_index.phashBlock))};
     if (it != consensusparams.script_flag_exceptions.end()) {
         flags = it->second;
-    }
-
-    // Enforce CHECKTEMPLATEVERIFY (BIP119)
-    if (DeploymentActiveAt(block_index, chainman, Consensus::DEPLOYMENT_CTV)) {
-        flags |= SCRIPT_VERIFY_CHECKTEMPLATEVERIFY;
     }
 
     // Enforce the DERSIG (BIP66) rule
@@ -4467,16 +4464,16 @@ bool ChainstateManager::ProcessNewBlockHeaders(std::span<const CBlockHeader> hea
 
 void ChainstateManager::ReportHeadersPresync(const arith_uint256& work, int64_t height, int64_t timestamp)
 {
-    AssertLockNotHeld(cs_main);
+    AssertLockNotHeld(GetMutex());
     {
-        LOCK(cs_main);
+        LOCK(GetMutex());
         // Don't report headers presync progress if we already have a post-minchainwork header chain.
         // This means we lose reporting for potentially legitimate, but unlikely, deep reorgs, but
         // prevent attackers that spam low-work headers from filling our logs.
         if (m_best_header->nChainWork >= UintToArith256(GetConsensus().nMinimumChainWork)) return;
         // Rate limit headers presync updates to 4 per second, as these are not subject to DoS
         // protection.
-        auto now = std::chrono::steady_clock::now();
+        auto now = MockableSteadyClock::now();
         if (now < m_last_presync_update + std::chrono::milliseconds{250}) return;
         m_last_presync_update = now;
     }
