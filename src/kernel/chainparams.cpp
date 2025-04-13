@@ -278,7 +278,7 @@ public:
         };
 
         chainTxData = ChainTxData{
-            // Data from RPC: getchaintxstats 4096 00000000000003fc7967410ba2d0a8a8d50daedc318d43e8baf1a9782c236a57
+            // Data from RPC: getchaintxstats 4096 0000000000003fc7967410ba2d0a8a8d50daedc318d43e8baf1a9782c236a57
             .nTime    = 1741042082,
             .tx_count = 475477615,
             .dTxRate  = 17.15933950357594,
@@ -321,6 +321,18 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;
         consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
         consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].min_activation_height = 0; // No activation delay
+
+        // Add CTV deployment
+        consensus.vDeployments[Consensus::DEPLOYMENT_CTV].bit = 3;
+        consensus.vDeployments[Consensus::DEPLOYMENT_CTV].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;
+        consensus.vDeployments[Consensus::DEPLOYMENT_CTV].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
+        consensus.vDeployments[Consensus::DEPLOYMENT_CTV].min_activation_height = 0; // No activation delay
+
+        // Add CSFS deployment
+        consensus.vDeployments[Consensus::DEPLOYMENT_CSFS].bit = 4; // Using bit 3 to avoid conflict with CTV's bit 1
+        consensus.vDeployments[Consensus::DEPLOYMENT_CSFS].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;
+        consensus.vDeployments[Consensus::DEPLOYMENT_CSFS].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
+        consensus.vDeployments[Consensus::DEPLOYMENT_CSFS].min_activation_height = 0; // No activation delay
 
         consensus.nMinimumChainWork = uint256{"0000000000000000000000000000000000000000000001d6dce8651b6094e4c1"};
         consensus.defaultAssumeValid = uint256{"0000000000003ed4f08dbdf6f7d6b271a6bcffce25675cb40aa9fa43179a89f3"}; // 72600
