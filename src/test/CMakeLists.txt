@@ -34,6 +34,7 @@ add_executable(test_bitcoin
   compilerbug_tests.cpp
   compress_tests.cpp
   crypto_tests.cpp
+  ctvhash_tests.cpp
   cuckoocache_tests.cpp
   dbwrapper_tests.cpp
   denialofservice_tests.cpp
@@ -130,6 +131,7 @@ target_json_data_sources(test_bitcoin
   data/base58_encode_decode.json
   data/bip341_wallet_vectors.json
   data/blockfilters.json
+  data/ctvhash.json
   data/key_io_invalid.json
   data/key_io_valid.json
   data/script_tests.json
@@ -170,6 +172,19 @@ if(ENABLE_IPC)
       ipc_tests.cpp
   )
   target_link_libraries(test_bitcoin bitcoin_ipc_test bitcoin_ipc)
+endif()
+
+if(WITH_SV2)
+  target_sources(test_bitcoin
+  PRIVATE
+    sv2_connman_tests.cpp
+    sv2_noise_tests.cpp
+    sv2_transport_tests.cpp
+    sv2_messages_tests.cpp
+    sv2_template_provider_tests.cpp
+  )
+  # target_link_libraries is not needed here, because bitcoin_sv2 is included
+  # by bitcoin_node below
 endif()
 
 function(add_boost_test source_file)

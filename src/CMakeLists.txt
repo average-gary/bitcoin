@@ -103,6 +103,9 @@ add_subdirectory(util)
 if(ENABLE_IPC)
   add_subdirectory(ipc)
 endif()
+if(WITH_SV2)
+  add_subdirectory(sv2)
+endif()
 
 add_library(bitcoin_consensus STATIC EXCLUDE_FROM_ALL
   arith_uint256.cpp
@@ -149,6 +152,7 @@ add_library(bitcoin_common STATIC EXCLUDE_FROM_ALL
   common/run_command.cpp
   common/settings.cpp
   common/signmessage.cpp
+  common/sockman.cpp
   common/system.cpp
   common/url.cpp
   compressor.cpp
@@ -156,6 +160,7 @@ add_library(bitcoin_common STATIC EXCLUDE_FROM_ALL
   core_write.cpp
   deploymentinfo.cpp
   external_signer.cpp
+  i2p.cpp
   init/common.cpp
   kernel/chainparams.cpp
   key.cpp
@@ -233,7 +238,6 @@ add_library(bitcoin_node STATIC EXCLUDE_FROM_ALL
   headerssync.cpp
   httprpc.cpp
   httpserver.cpp
-  i2p.cpp
   index/base.cpp
   index/blockfilterindex.cpp
   index/coinstatsindex.cpp
@@ -329,8 +333,15 @@ target_link_libraries(bitcoin_node
     $<TARGET_NAME_IF_EXISTS:libevent::extra>
     $<TARGET_NAME_IF_EXISTS:libevent::pthreads>
     $<TARGET_NAME_IF_EXISTS:USDT::headers>
+    $<TARGET_NAME_IF_EXISTS:bitcoin_sv2>
 )
 
+if(WITH_SV2)
+  target_compile_definitions(bitcoin_node
+  PUBLIC
+    WITH_SV2=1
+  )
+endif()
 
 # Bitcoin Core bitcoind.
 if(BUILD_DAEMON)
