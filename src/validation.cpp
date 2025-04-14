@@ -1233,8 +1233,14 @@ bool MemPoolAccept::PolicyScriptChecks(const ATMPArgs& args, Workspace& ws)
 
     unsigned int scriptVerifyFlags = STANDARD_SCRIPT_VERIFY_FLAGS;
 
-    // CHECKTEMPLATEVERIFY (BIP119) is always active on regtest, but no other chain.
-    if (args.m_chainparams.GetChainType() == ChainType::REGTEST) {
+    // CHECKSIGFROMSTACK (BIP348) is always active on regtest and testnet4, but no other chain.
+    if (args.m_chainparams.GetChainType() == ChainType::REGTEST || args.m_chainparams.GetChainType() == ChainType::TESTNET4) {
+        scriptVerifyFlags |= SCRIPT_VERIFY_CHECKSIGFROMSTACK;
+        scriptVerifyFlags &= ~SCRIPT_VERIFY_DISCOURAGE_CHECKSIGFROMSTACK;
+    }
+
+    // CHECKTEMPLATEVERIFY (BIP119) is always active on regtest and testnet4, but no other chain.
+    if (args.m_chainparams.GetChainType() == ChainType::REGTEST || args.m_chainparams.GetChainType() == ChainType::TESTNET4) {
         scriptVerifyFlags |= SCRIPT_VERIFY_CHECKTEMPLATEVERIFY;
         scriptVerifyFlags &= ~SCRIPT_VERIFY_DISCOURAGE_CHECKTEMPLATEVERIFY;
     }
@@ -2419,6 +2425,11 @@ static unsigned int GetBlockScriptFlags(const CBlockIndex& block_index, const Ch
     // Enforce CHECKTEMPLATEVERIFY (BIP119)
     if (DeploymentActiveAt(block_index, chainman, Consensus::DEPLOYMENT_CTV)) {
         flags |= SCRIPT_VERIFY_CHECKTEMPLATEVERIFY;
+    }
+
+    // Enforce CHECKSIGFROMSTACK (BIP348)
+    if (DeploymentActiveAt(block_index, chainman, Consensus::DEPLOYMENT_CSFS)) {
+        flags |= SCRIPT_VERIFY_CHECKSIGFROMSTACK;
     }
 
     // Enforce the DERSIG (BIP66) rule
