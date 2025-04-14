@@ -40,8 +40,12 @@ BOOST_AUTO_TEST_CASE(ctvhash_from_data)
             try {
                 auto& hash_arr = test["result"].get_array();
                 for (size_t i = 0; i < hash_arr.size(); ++i) {
-                    hash.emplace_back();
-                    hash.back().SetHexDeprecated(hash_arr[i].get_str());
+                    auto opt_hash = uint256::FromUserHex(hash_arr[i].get_str());
+                    if (!opt_hash) {
+                        BOOST_ERROR("Bad test: Invalid hex string" << strTest);
+                        continue;
+                    }
+                    hash.push_back(*opt_hash);
                     // reverse because python's sha256().digest().hex() is
                     // backwards
                     std::reverse(hash.back().begin(), hash.back().end());
