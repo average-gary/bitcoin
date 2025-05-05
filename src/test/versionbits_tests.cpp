@@ -435,6 +435,13 @@ BOOST_FIXTURE_TEST_CASE(versionbits_computeblockversion, BlockVersionTest)
             // the same bit might overlap, even when non-overlapping start-end
             // times are picked.
             const uint32_t dep_mask{vbcache.Mask(chainParams->GetConsensus(), dep)};
+
+            if (chain_type != ChainType::REGTEST && chain_type != ChainType::TESTNET4 && (dep == Consensus::DEPLOYMENT_CTV || dep == Consensus::DEPLOYMENT_CSFS)) {
+                // CTV and CSFS only exists as a deployment on regtest and testnet4, so skip over it for other
+                // chains.
+                continue;
+            }
+
             BOOST_CHECK(!(chain_all_vbits & dep_mask));
             chain_all_vbits |= dep_mask;
             check_computeblockversion(vbcache, chainParams->GetConsensus(), dep);
